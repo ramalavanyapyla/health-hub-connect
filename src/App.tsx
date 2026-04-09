@@ -3,8 +3,24 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
+
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Dashboard from "./pages/Dashboard";
+import PatientDashboard from "./pages/patient/PatientDashboard";
+import PatientRecords from "./pages/patient/PatientRecords";
+import PatientQR from "./pages/patient/PatientQR";
+import PatientProfile from "./pages/patient/PatientProfile";
+import DoctorDashboard from "./pages/doctor/DoctorDashboard";
+import DoctorPatients from "./pages/doctor/DoctorPatients";
+import DoctorAddRecord from "./pages/doctor/DoctorAddRecord";
+import DoctorProfile from "./pages/doctor/DoctorProfile";
 
 const queryClient = new QueryClient();
 
@@ -14,11 +30,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/patient" element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>} />
+            <Route path="/patient/records" element={<ProtectedRoute><PatientRecords /></ProtectedRoute>} />
+            <Route path="/patient/qr" element={<ProtectedRoute><PatientQR /></ProtectedRoute>} />
+            <Route path="/patient/profile" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
+            <Route path="/doctor" element={<ProtectedRoute requiredRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
+            <Route path="/doctor/patients" element={<ProtectedRoute requiredRole="doctor"><DoctorPatients /></ProtectedRoute>} />
+            <Route path="/doctor/records" element={<ProtectedRoute requiredRole="doctor"><DoctorAddRecord /></ProtectedRoute>} />
+            <Route path="/doctor/profile" element={<ProtectedRoute requiredRole="doctor"><DoctorProfile /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
