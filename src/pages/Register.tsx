@@ -39,7 +39,7 @@ const Register = () => {
     if (authError) {
       toast.error(authError.message);
     } else {
-      toast.success("Account created! Please check your email to verify.");
+      toast.success("Account created successfully! You can now sign in.");
       navigate("/login");
     }
     setLoading(false);
