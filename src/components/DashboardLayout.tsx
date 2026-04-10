@@ -9,7 +9,7 @@ import {
 
 interface Props {
   children: ReactNode;
-  role: "patient" | "doctor";
+  role: "patient" | "doctor" | "admin";
 }
 
 const patientLinks = [
@@ -26,11 +26,17 @@ const doctorLinks = [
   { to: "/doctor/profile", icon: User, label: "Profile" },
 ];
 
+const adminLinks = [
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/admin/patients", icon: Users, label: "Patients" },
+  { to: "/admin/hospitals", icon: Building2, label: "Hospitals" },
+];
+
 const DashboardLayout = ({ children, role }: Props) => {
   const { signOut, user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const links = role === "patient" ? patientLinks : doctorLinks;
+  const links = role === "patient" ? patientLinks : role === "admin" ? adminLinks : doctorLinks;
 
   return (
     <div className="flex h-screen bg-background">
@@ -80,7 +86,7 @@ const DashboardLayout = ({ children, role }: Props) => {
             <Menu className="h-5 w-5" />
           </button>
           <h2 className="font-display text-lg font-semibold capitalize">
-            {role === "patient" ? "Patient Portal" : "Hospital Portal"}
+            {role === "patient" ? "Patient Portal" : role === "admin" ? "Admin Portal" : "Hospital Portal"}
           </h2>
         </div>
         <div className="p-4 md:p-6">{children}</div>
