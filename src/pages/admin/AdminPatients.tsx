@@ -11,17 +11,23 @@ const AdminPatients = () => {
 
   useEffect(() => {
     const fetchPatients = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("*, profiles!inner(full_name, phone, blood_group, gender)")
-        .order("created_at", { ascending: false });
-      setPatients(data || []);
+      // Fetch patients and profiles separately, join client-side
+      const [patientsRes, profilesRes] = await Promise.all([
+        supabase.from("patients").select("*").order("created_at", { ascending: false }),
+        supabase.from("profiles").select("*"),
+      ]);
+      const profilesMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
+      const merged = (patientsRes.data || []).map(p => ({
+        ...p,
+        profile: profilesMap.get(p.user_id) || null,
+      }));
+      setPatients(merged);
     };
     fetchPatients();
   }, []);
 
   const filtered = patients.filter((p) => {
-    const name = p.profiles?.full_name?.toLowerCase() || "";
+    const name = p.profile?.full_name?.toLowerCase() || "";
     const uid = p.patient_uid?.toLowerCase() || "";
     const q = search.toLowerCase();
     return name.includes(q) || uid.includes(q);
@@ -57,9 +63,9 @@ const AdminPatients = () => {
                 {filtered.map((p) => (
                   <div key={p.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>
-                      <p className="font-medium">{p.profiles?.full_name || "Unknown"}</p>
+                      <p className="font-medium">{p.profile?.full_name || "Unknown"}</p>
                       <p className="text-sm text-muted-foreground">
-                        {p.profiles?.gender || "N/A"} • Blood: {p.profiles?.blood_group || "N/A"}
+                        {p.profile?.gender || "N/A"} • Blood: {p.profile?.blood_group || "N/A"}
                       </p>
                     </div>
                     <span className="font-mono text-sm font-semibold text-primary">{p.patient_uid}</span>
