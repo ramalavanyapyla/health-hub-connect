@@ -12,7 +12,16 @@ const Dashboard = () => {
     );
   }
 
-  if (roles.includes("doctor") || roles.includes("admin")) {
+  // No role assigned yet — redirect to role selection (OAuth users)
+  if (roles.length === 0) {
+    return <Navigate to="/select-role" replace />;
+  }
+
+  if (roles.includes("admin")) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (roles.includes("doctor")) {
     return <Navigate to="/doctor" replace />;
   }
 
