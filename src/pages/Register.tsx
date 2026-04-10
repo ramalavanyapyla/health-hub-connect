@@ -27,35 +27,18 @@ const Register = () => {
     }
     setLoading(true);
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, role },
         emailRedirectTo: window.location.origin,
       },
     });
 
     if (authError) {
       toast.error(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (authData.user) {
-      // Insert role
-      await supabase.from("user_roles").insert({ user_id: authData.user.id, role });
-
-      // If patient, create patient record
-      if (role === "patient") {
-        await supabase.from("patients").insert({ user_id: authData.user.id });
-      }
-
-      // If doctor, create doctor profile
-      if (role === "doctor") {
-        await supabase.from("doctor_profiles").insert({ user_id: authData.user.id });
-      }
-
+    } else {
       toast.success("Account created! Please check your email to verify.");
       navigate("/login");
     }
