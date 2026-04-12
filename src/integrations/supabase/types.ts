@@ -158,6 +158,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           created_at: string
@@ -226,6 +259,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      qr_access_tokens: {
+        Row: {
+          access_level: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          patient_id: string
+          token: string
+          use_count: number
+        }
+        Insert: {
+          access_level?: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          patient_id: string
+          token?: string
+          use_count?: number
+        }
+        Update: {
+          access_level?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          patient_id?: string
+          token?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_access_tokens_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
