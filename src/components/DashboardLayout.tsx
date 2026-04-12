@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import NotificationsPanel from "@/components/NotificationsPanel";
 import {
   ShieldCheck, LayoutDashboard, FileText, User, LogOut,
   Menu, X, Stethoscope, Users, Building2, QrCode
@@ -88,6 +89,9 @@ const DashboardLayout = ({ children, role }: Props) => {
           <h2 className="font-display text-lg font-semibold capitalize">
             {role === "patient" ? "Patient Portal" : role === "admin" ? "Admin Portal" : "Hospital Portal"}
           </h2>
+          <div className="ml-auto">
+            <NotificationsPanel />
+          </div>
         </div>
         <div className="p-4 md:p-6">{children}</div>
       </main>
