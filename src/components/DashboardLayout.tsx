@@ -17,6 +17,7 @@ const patientLinks = [
   { to: "/patient", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/patient/records", icon: FileText, label: "Medical Records" },
   { to: "/patient/qr", icon: QrCode, label: "Emergency QR" },
+  { to: "/patient/doctors", icon: Stethoscope, label: "Doctor Access" },
   { to: "/patient/profile", icon: User, label: "Profile" },
 ];
 

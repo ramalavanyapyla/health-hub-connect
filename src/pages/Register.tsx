@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShieldCheck, Mail, Lock, User } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -13,10 +12,13 @@ type AppRole = Database["public"]["Enums"]["app_role"];
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const portalParam = searchParams.get("portal");
+  const role: AppRole = portalParam === "doctor" ? "doctor" : "patient";
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<AppRole>("patient");
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -55,8 +57,12 @@ const Register = () => {
             </div>
             <span className="font-display text-2xl font-bold">UPMRS</span>
           </Link>
-          <h1 className="mt-6 font-display text-3xl font-bold">Create your account</h1>
-          <p className="mt-2 text-muted-foreground">Join the unified medical records platform</p>
+          <h1 className="mt-6 font-display text-3xl font-bold">
+            {role === "doctor" ? "Doctor Registration" : "Patient Registration"}
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            {role === "doctor" ? "Create your doctor account" : "Create your patient account"}
+          </p>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
@@ -64,7 +70,7 @@ const Register = () => {
             <Label htmlFor="name">Full Name</Label>
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input id="name" placeholder="Dr. John Doe" className="pl-10" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <Input id="name" placeholder={role === "doctor" ? "Dr. John Doe" : "John Doe"} className="pl-10" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             </div>
           </div>
           <div className="space-y-2">
@@ -80,18 +86,6 @@ const Register = () => {
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input id="password" type="password" placeholder="Min 8 characters" className="pl-10" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>I am a</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="patient">Patient</SelectItem>
-                <SelectItem value="doctor">Doctor / Healthcare Provider</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <Button type="submit" className="w-full gradient-primary border-0 text-primary-foreground" disabled={loading}>
             {loading ? "Creating account..." : "Create account"}

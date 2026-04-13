@@ -14,11 +14,11 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
-import RoleSelection from "./pages/RoleSelection";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import PatientRecords from "./pages/patient/PatientRecords";
 import PatientQR from "./pages/patient/PatientQR";
 import PatientProfile from "./pages/patient/PatientProfile";
+import PatientDoctorAccess from "./pages/patient/PatientDoctorAccess";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
 import DoctorAddRecord from "./pages/doctor/DoctorAddRecord";
@@ -43,12 +43,12 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/qr-view" element={<QRViewer />} />
-            <Route path="/select-role" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/patient" element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>} />
             <Route path="/patient/records" element={<ProtectedRoute><PatientRecords /></ProtectedRoute>} />
             <Route path="/patient/qr" element={<ProtectedRoute><PatientQR /></ProtectedRoute>} />
             <Route path="/patient/profile" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
+            <Route path="/patient/doctors" element={<ProtectedRoute><PatientDoctorAccess /></ProtectedRoute>} />
             <Route path="/doctor" element={<ProtectedRoute requiredRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
             <Route path="/doctor/patients" element={<ProtectedRoute requiredRole="doctor"><DoctorPatients /></ProtectedRoute>} />
             <Route path="/doctor/records" element={<ProtectedRoute requiredRole="doctor"><DoctorAddRecord /></ProtectedRoute>} />

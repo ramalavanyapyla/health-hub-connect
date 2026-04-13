@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      doctor_patient_access: {
+        Row: {
+          doctor_id: string
+          id: string
+          patient_id: string
+          requested_at: string
+          responded_at: string | null
+          status: string
+        }
+        Insert: {
+          doctor_id: string
+          id?: string
+          patient_id: string
+          requested_at?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Update: {
+          doctor_id?: string
+          id?: string
+          patient_id?: string
+          requested_at?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       doctor_profiles: {
         Row: {
           created_at: string
