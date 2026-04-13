@@ -12,11 +12,6 @@ const Dashboard = () => {
     );
   }
 
-  // No role assigned yet — redirect to role selection (OAuth users)
-  if (roles.length === 0) {
-    return <Navigate to="/select-role" replace />;
-  }
-
   if (roles.includes("admin")) {
     return <Navigate to="/admin" replace />;
   }
@@ -25,6 +20,7 @@ const Dashboard = () => {
     return <Navigate to="/doctor" replace />;
   }
 
+  // Default to patient portal (all users with a role go here)
   return <Navigate to="/patient" replace />;
 };
 

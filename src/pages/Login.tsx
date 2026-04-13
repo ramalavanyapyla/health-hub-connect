@@ -5,14 +5,17 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Mail, Lock } from "lucide-react";
+import { ShieldCheck, Mail, Lock, User, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
+
+type Portal = "patient" | "doctor";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [portal, setPortal] = useState<Portal | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +45,50 @@ const Login = () => {
     if (!result.redirected && !result.error) navigate("/dashboard");
   };
 
+  // Portal selection screen
+  if (!portal) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-lg space-y-8">
+          <div className="text-center">
+            <Link to="/" className="inline-flex items-center gap-2">
+              <div className="gradient-primary flex h-10 w-10 items-center justify-center rounded-xl">
+                <ShieldCheck className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <span className="font-display text-2xl font-bold">UPMRS</span>
+            </Link>
+            <h1 className="mt-6 font-display text-3xl font-bold">Choose your portal</h1>
+            <p className="mt-2 text-muted-foreground">Select how you'd like to sign in</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              onClick={() => setPortal("patient")}
+              className="group flex flex-col items-center gap-3 rounded-xl border-2 border-border p-8 transition-all hover:border-primary hover:shadow-glow"
+            >
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <User className="h-8 w-8" />
+              </div>
+              <span className="font-display text-lg font-bold">Patient Portal</span>
+              <span className="text-sm text-muted-foreground text-center">Access your medical records & QR code</span>
+            </button>
+
+            <button
+              onClick={() => setPortal("doctor")}
+              className="group flex flex-col items-center gap-3 rounded-xl border-2 border-border p-8 transition-all hover:border-primary hover:shadow-glow"
+            >
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <Stethoscope className="h-8 w-8" />
+              </div>
+              <span className="font-display text-lg font-bold">Doctor Portal</span>
+              <span className="text-sm text-muted-foreground text-center">Manage patients & medical records</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
@@ -52,8 +99,15 @@ const Login = () => {
             </div>
             <span className="font-display text-2xl font-bold">UPMRS</span>
           </Link>
-          <h1 className="mt-6 font-display text-3xl font-bold">Welcome back</h1>
-          <p className="mt-2 text-muted-foreground">Sign in to access your medical records</p>
+          <h1 className="mt-6 font-display text-3xl font-bold">
+            {portal === "patient" ? "Patient Sign In" : "Doctor Sign In"}
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            {portal === "patient" ? "Access your medical records" : "Manage patients & records"}
+          </p>
+          <button onClick={() => setPortal(null)} className="mt-2 text-sm text-primary hover:underline">
+            ← Switch portal
+          </button>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -96,7 +150,8 @@ const Login = () => {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          Don't have an account? <Link to="/register" className="text-primary hover:underline font-medium">Sign up</Link>
+          Don't have an account?{" "}
+          <Link to={`/register?portal=${portal}`} className="text-primary hover:underline font-medium">Sign up</Link>
         </p>
       </div>
     </div>
