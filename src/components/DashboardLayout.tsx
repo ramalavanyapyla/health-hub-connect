@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import NotificationsPanel from "@/components/NotificationsPanel";
 import {
   ShieldCheck, LayoutDashboard, FileText, User, LogOut,
-  Menu, X, Stethoscope, Users, Building2, QrCode
+  Menu, X, Stethoscope, Users, Building2, QrCode, CalendarDays
 } from "lucide-react";
 
 interface Props {
@@ -16,6 +16,7 @@ interface Props {
 const patientLinks = [
   { to: "/patient", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/patient/records", icon: FileText, label: "Medical Records" },
+  { to: "/patient/appointments", icon: CalendarDays, label: "Appointments" },
   { to: "/patient/qr", icon: QrCode, label: "Emergency QR" },
   { to: "/patient/doctors", icon: Stethoscope, label: "Doctor Access" },
   { to: "/patient/profile", icon: User, label: "Profile" },
@@ -24,6 +25,7 @@ const patientLinks = [
 const doctorLinks = [
   { to: "/doctor", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/doctor/patients", icon: Users, label: "Patients" },
+  { to: "/doctor/appointments", icon: CalendarDays, label: "Appointments" },
   { to: "/doctor/records", icon: FileText, label: "Add Record" },
   { to: "/doctor/profile", icon: User, label: "Profile" },
 ];
