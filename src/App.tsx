@@ -23,6 +23,8 @@ import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
 import DoctorAddRecord from "./pages/doctor/DoctorAddRecord";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
+import DoctorAppointments from "./pages/doctor/DoctorAppointments";
+import PatientAppointments from "./pages/patient/PatientAppointments";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPatients from "./pages/admin/AdminPatients";
 import AdminHospitals from "./pages/admin/AdminHospitals";
@@ -49,10 +51,12 @@ const App = () => (
             <Route path="/patient/qr" element={<ProtectedRoute><PatientQR /></ProtectedRoute>} />
             <Route path="/patient/profile" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
             <Route path="/patient/doctors" element={<ProtectedRoute><PatientDoctorAccess /></ProtectedRoute>} />
+            <Route path="/patient/appointments" element={<ProtectedRoute><PatientAppointments /></ProtectedRoute>} />
             <Route path="/doctor" element={<ProtectedRoute requiredRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
             <Route path="/doctor/patients" element={<ProtectedRoute requiredRole="doctor"><DoctorPatients /></ProtectedRoute>} />
             <Route path="/doctor/records" element={<ProtectedRoute requiredRole="doctor"><DoctorAddRecord /></ProtectedRoute>} />
             <Route path="/doctor/profile" element={<ProtectedRoute requiredRole="doctor"><DoctorProfile /></ProtectedRoute>} />
+            <Route path="/doctor/appointments" element={<ProtectedRoute requiredRole="doctor"><DoctorAppointments /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/patients" element={<ProtectedRoute requiredRole="admin"><AdminPatients /></ProtectedRoute>} />
             <Route path="/admin/hospitals" element={<ProtectedRoute requiredRole="admin"><AdminHospitals /></ProtectedRoute>} />
