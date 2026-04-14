@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          appointment_date: string
+          appointment_time: string
+          created_at: string
+          doctor_id: string
+          hospital_id: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          reason: string | null
+          specialization: string | null
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+        }
+        Insert: {
+          appointment_date: string
+          appointment_time: string
+          created_at?: string
+          doctor_id: string
+          hospital_id?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          reason?: string | null
+          specialization?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Update: {
+          appointment_date?: string
+          appointment_time?: string
+          created_at?: string
+          doctor_id?: string
+          hospital_id?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          reason?: string | null
+          specialization?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_patient_access: {
         Row: {
           doctor_id: string
@@ -371,6 +438,7 @@ export type Database = {
     }
     Enums: {
       app_role: "patient" | "doctor" | "admin"
+      appointment_status: "booked" | "completed" | "cancelled" | "no_show"
       record_type:
         | "diagnosis"
         | "prescription"
@@ -508,6 +576,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["patient", "doctor", "admin"],
+      appointment_status: ["booked", "completed", "cancelled", "no_show"],
       record_type: [
         "diagnosis",
         "prescription",
