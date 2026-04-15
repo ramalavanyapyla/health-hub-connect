@@ -81,6 +81,33 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       doctor_patient_access: {
         Row: {
           doctor_id: string
@@ -115,6 +142,7 @@ export type Database = {
           hospital_id: string | null
           id: string
           license_number: string | null
+          phone: string | null
           specialization: string | null
           updated_at: string
           user_id: string
@@ -125,6 +153,7 @@ export type Database = {
           hospital_id?: string | null
           id?: string
           license_number?: string | null
+          phone?: string | null
           specialization?: string | null
           updated_at?: string
           user_id: string
@@ -135,6 +164,7 @@ export type Database = {
           hospital_id?: string | null
           id?: string
           license_number?: string | null
+          phone?: string | null
           specialization?: string | null
           updated_at?: string
           user_id?: string

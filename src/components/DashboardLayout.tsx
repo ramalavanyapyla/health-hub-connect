@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import NotificationsPanel from "@/components/NotificationsPanel";
 import {
   ShieldCheck, LayoutDashboard, FileText, User, LogOut,
-  Menu, X, Stethoscope, Users, Building2, QrCode, CalendarDays
+  Menu, X, Stethoscope, Users, Building2, QrCode, CalendarDays, MessageCircle
 } from "lucide-react";
+import AIChatBot from "@/components/AIChatBot";
 
 interface Props {
   children: ReactNode;
@@ -19,6 +20,7 @@ const patientLinks = [
   { to: "/patient/appointments", icon: CalendarDays, label: "Appointments" },
   { to: "/patient/qr", icon: QrCode, label: "Emergency QR" },
   { to: "/patient/doctors", icon: Stethoscope, label: "Doctor Access" },
+  { to: "/patient/chat", icon: MessageCircle, label: "Messages" },
   { to: "/patient/profile", icon: User, label: "Profile" },
 ];
 
@@ -27,6 +29,7 @@ const doctorLinks = [
   { to: "/doctor/patients", icon: Users, label: "Patients" },
   { to: "/doctor/appointments", icon: CalendarDays, label: "Appointments" },
   { to: "/doctor/records", icon: FileText, label: "Add Record" },
+  { to: "/doctor/chat", icon: MessageCircle, label: "Messages" },
   { to: "/doctor/profile", icon: User, label: "Profile" },
 ];
 
@@ -98,6 +101,7 @@ const DashboardLayout = ({ children, role }: Props) => {
         </div>
         <div className="p-4 md:p-6">{children}</div>
       </main>
+      {role === "patient" && <AIChatBot />}
     </div>
   );
 };

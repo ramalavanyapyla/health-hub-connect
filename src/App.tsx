@@ -25,9 +25,11 @@ import DoctorAddRecord from "./pages/doctor/DoctorAddRecord";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorAppointments from "./pages/doctor/DoctorAppointments";
 import PatientAppointments from "./pages/patient/PatientAppointments";
+import PatientChat from "./pages/patient/PatientChat";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPatients from "./pages/admin/AdminPatients";
 import AdminHospitals from "./pages/admin/AdminHospitals";
+import DoctorChat from "./pages/doctor/DoctorChat";
 
 const queryClient = new QueryClient();
 
@@ -52,11 +54,13 @@ const App = () => (
             <Route path="/patient/profile" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
             <Route path="/patient/doctors" element={<ProtectedRoute><PatientDoctorAccess /></ProtectedRoute>} />
             <Route path="/patient/appointments" element={<ProtectedRoute><PatientAppointments /></ProtectedRoute>} />
+            <Route path="/patient/chat" element={<ProtectedRoute><PatientChat /></ProtectedRoute>} />
             <Route path="/doctor" element={<ProtectedRoute requiredRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
             <Route path="/doctor/patients" element={<ProtectedRoute requiredRole="doctor"><DoctorPatients /></ProtectedRoute>} />
             <Route path="/doctor/records" element={<ProtectedRoute requiredRole="doctor"><DoctorAddRecord /></ProtectedRoute>} />
             <Route path="/doctor/profile" element={<ProtectedRoute requiredRole="doctor"><DoctorProfile /></ProtectedRoute>} />
             <Route path="/doctor/appointments" element={<ProtectedRoute requiredRole="doctor"><DoctorAppointments /></ProtectedRoute>} />
+            <Route path="/doctor/chat" element={<ProtectedRoute requiredRole="doctor"><DoctorChat /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/patients" element={<ProtectedRoute requiredRole="admin"><AdminPatients /></ProtectedRoute>} />
             <Route path="/admin/hospitals" element={<ProtectedRoute requiredRole="admin"><AdminHospitals /></ProtectedRoute>} />
