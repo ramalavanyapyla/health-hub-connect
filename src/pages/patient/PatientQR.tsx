@@ -41,8 +41,10 @@ const PatientQR = () => {
     load();
   }, [user]);
 
+  // Use published production URL for QR codes so they work when scanned externally
+  const productionOrigin = "https://health-weave-id.lovable.app";
   const qrLink = token
-    ? `${window.location.origin}/qr-view?token=${token.token}`
+    ? `${productionOrigin}/qr-view?token=${token.token}`
     : "";
 
   const qrUrl = token
