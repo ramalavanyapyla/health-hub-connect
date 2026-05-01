@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShieldCheck, Mail, Lock, User, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 type Portal = "patient" | "doctor";
 
@@ -31,7 +32,7 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: getAppBaseUrl(),
     });
     if (result.error) toast.error("Google login failed");
     if (!result.redirected && !result.error) navigate("/dashboard");
