@@ -8,6 +8,8 @@ import { QrCode, AlertTriangle, Shield, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+const appBaseUrl = (import.meta.env.VITE_APP_BASE_URL || window.location.origin).replace(/\/$/, "");
+
 const PatientQR = () => {
   const { user } = useAuth();
   const [patient, setPatient] = useState<any>(null);
@@ -41,10 +43,8 @@ const PatientQR = () => {
     load();
   }, [user]);
 
-  // Use published production URL for QR codes so they work when scanned externally
-  const productionOrigin = "https://health-weave-id.lovable.app";
   const qrLink = token
-    ? `${productionOrigin}/qr-view?token=${token.token}`
+    ? `${appBaseUrl}/emergency/${patient?.id}`
     : "";
 
   const qrUrl = token
@@ -81,6 +81,7 @@ const PatientQR = () => {
                   <Badge variant="outline" className="gap-1">
                     <Shield className="h-3 w-3" /> Permanent • Emergency Access
                   </Badge>
+                  <p className="break-all text-center text-xs text-muted-foreground">{qrLink}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     Scanned {token.use_count} time(s)
                   </div>
