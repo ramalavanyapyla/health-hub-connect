@@ -339,6 +339,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          allergies: string | null
           avatar_url: string | null
           blood_group: string | null
           created_at: string
@@ -348,12 +349,14 @@ export type Database = {
           full_name: string
           gender: string | null
           id: string
+          medical_conditions: string | null
           phone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          allergies?: string | null
           avatar_url?: string | null
           blood_group?: string | null
           created_at?: string
@@ -363,12 +366,14 @@ export type Database = {
           full_name?: string
           gender?: string | null
           id?: string
+          medical_conditions?: string | null
           phone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          allergies?: string | null
           avatar_url?: string | null
           blood_group?: string | null
           created_at?: string
@@ -378,9 +383,49 @@ export type Database = {
           full_name?: string
           gender?: string | null
           id?: string
+          medical_conditions?: string | null
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      public_emergency_profiles: {
+        Row: {
+          allergies: string | null
+          blood_group: string | null
+          created_at: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          full_name: string | null
+          id: string
+          medical_conditions: string | null
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          allergies?: string | null
+          blood_group?: string | null
+          created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name?: string | null
+          id?: string
+          medical_conditions?: string | null
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          allergies?: string | null
+          blood_group?: string | null
+          created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name?: string | null
+          id?: string
+          medical_conditions?: string | null
+          patient_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -464,6 +509,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      sync_public_emergency_profile_for_user: {
+        Args: { _user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
