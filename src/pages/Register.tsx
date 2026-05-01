@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShieldCheck, Mail, Lock, User, Phone, Award, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -78,7 +79,7 @@ const Register = () => {
           role,
           ...(role === "doctor" && { specialization, license_number: licenseNumber, phone }),
         },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getAppBaseUrl(),
       },
     });
 
