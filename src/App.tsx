@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import QRViewer from "./pages/QRViewer";
+import EmergencyPage from "./pages/EmergencyPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/qr-view" element={<QRViewer />} />
+            <Route path="/emergency/:patientId" element={<EmergencyPage />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/patient" element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>} />
             <Route path="/patient/records" element={<ProtectedRoute><PatientRecords /></ProtectedRoute>} />
