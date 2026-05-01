@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, AlertTriangle, Heart, Phone, User, FileText, Calendar } from "lucide-react";
@@ -69,6 +69,11 @@ const QRViewer = () => {
             <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
             <h2 className="text-xl font-bold mb-2">Access Denied</h2>
             <p className="text-muted-foreground">{error}</p>
+            <div className="mt-6">
+              <Link to="/" className="text-sm font-medium text-primary hover:underline">
+                Return home
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

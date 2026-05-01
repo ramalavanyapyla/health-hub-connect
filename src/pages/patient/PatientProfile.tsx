@@ -20,6 +20,8 @@ const PatientProfile = () => {
     date_of_birth: "",
     gender: "",
     blood_group: "",
+    allergies: "",
+    medical_conditions: "",
     phone: "",
     address: "",
     emergency_contact_name: "",
@@ -34,6 +36,8 @@ const PatientProfile = () => {
         date_of_birth: data.date_of_birth || "",
         gender: data.gender || "",
         blood_group: data.blood_group || "",
+        allergies: data.allergies || "",
+        medical_conditions: data.medical_conditions || "",
         phone: data.phone || "",
         address: data.address || "",
         emergency_contact_name: data.emergency_contact_name || "",
@@ -97,6 +101,24 @@ const PatientProfile = () => {
             <div className="space-y-2">
               <Label>Address</Label>
               <Textarea value={form.address} onChange={(e) => update("address", e.target.value)} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Allergies</Label>
+                <Textarea
+                  value={form.allergies}
+                  onChange={(e) => update("allergies", e.target.value)}
+                  placeholder="Penicillin, peanuts, latex"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Medical Conditions</Label>
+                <Textarea
+                  value={form.medical_conditions}
+                  onChange={(e) => update("medical_conditions", e.target.value)}
+                  placeholder="Asthma, diabetes, hypertension"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

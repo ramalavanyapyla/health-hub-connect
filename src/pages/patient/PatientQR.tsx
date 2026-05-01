@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { QrCode, AlertTriangle, Shield, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getAppBaseUrl } from "@/lib/app-url";
+
+const appBaseUrl = getAppBaseUrl();
 
 const PatientQR = () => {
   const { user } = useAuth();
   const [patient, setPatient] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [token, setToken] = useState<any>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -24,30 +26,15 @@ const PatientQR = () => {
       ]);
       setPatient(p.data);
       setProfile(pr.data);
-
-      if (p.data) {
-        const { data: tokens } = await supabase
-          .from("qr_access_tokens")
-          .select("*")
-          .eq("patient_id", p.data.id)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (tokens && tokens.length > 0) {
-          setToken(tokens[0]);
-        }
-      }
     };
     load();
   }, [user]);
 
-  // Use published production URL for QR codes so they work when scanned externally
-  const productionOrigin = "https://health-weave-id.lovable.app";
-  const qrLink = token
-    ? `${productionOrigin}/qr-view?token=${token.token}`
+  const qrLink = patient?.id
+    ? `${appBaseUrl}/emergency/${patient?.id}`
     : "";
 
-  const qrUrl = token
+  const qrUrl = patient?.id
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrLink)}`
     : "";
 
@@ -74,16 +61,14 @@ const PatientQR = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
-              {token ? (
+              {patient?.id ? (
                 <>
                   <img src={qrUrl} alt="Emergency QR Code" className="rounded-lg border border-border" />
                   <p className="font-mono text-lg font-bold text-primary">{patient?.patient_uid}</p>
                   <Badge variant="outline" className="gap-1">
                     <Shield className="h-3 w-3" /> Permanent • Emergency Access
                   </Badge>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    Scanned {token.use_count} time(s)
-                  </div>
+                  <p className="break-all text-center text-xs text-muted-foreground">{qrLink}</p>
                   <Button variant="outline" size="sm" onClick={copyLink} className="gap-2">
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     {copied ? "Copied!" : "Copy Link"}
@@ -113,6 +98,14 @@ const PatientQR = () => {
                 <div>
                   <p className="text-muted-foreground">Blood Group</p>
                   <p className="font-medium text-destructive">{profile?.blood_group || "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Allergies</p>
+                  <p className="font-medium">{profile?.allergies || "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Conditions</p>
+                  <p className="font-medium">{profile?.medical_conditions || "Not set"}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Date of Birth</p>
