@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { QrCode, AlertTriangle, Shield, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getAppBaseUrl } from "@/lib/app-url";
 
-const appBaseUrl = (import.meta.env.VITE_APP_BASE_URL || window.location.origin).replace(/\/$/, "");
+const appBaseUrl = getAppBaseUrl();
 
 const PatientQR = () => {
   const { user } = useAuth();
