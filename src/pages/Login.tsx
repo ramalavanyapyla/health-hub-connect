@@ -37,14 +37,6 @@ const Login = () => {
     if (!result.redirected && !result.error) navigate("/dashboard");
   };
 
-  const handleAppleLogin = async () => {
-    const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) toast.error("Apple login failed");
-    if (!result.redirected && !result.error) navigate("/dashboard");
-  };
-
   // Portal selection screen
   if (!portal) {
     return (
