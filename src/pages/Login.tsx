@@ -31,11 +31,26 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: getAppBaseUrl(),
-    });
-    if (result.error) toast.error("Google login failed");
-    if (!result.redirected && !result.error) navigate("/dashboard");
+    const baseUrl = getAppBaseUrl();
+    const isLovableHost = /\.lovable\.(app|dev|host)$|lovableproject\.com$/.test(
+      new URL(baseUrl).hostname
+    );
+
+    // The Lovable managed OAuth broker (/~oauth/*) only exists on Lovable-hosted domains.
+    // On external hosts like Firebase, fall back to Supabase's direct OAuth flow.
+    if (isLovableHost) {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: baseUrl,
+      });
+      if (result.error) toast.error("Google login failed");
+      if (!result.redirected && !result.error) navigate("/dashboard");
+    } else {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${baseUrl}/dashboard` },
+      });
+      if (error) toast.error(error.message);
+    }
   };
 
   // Portal selection screen
