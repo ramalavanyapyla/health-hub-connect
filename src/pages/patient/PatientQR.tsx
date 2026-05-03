@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, AlertTriangle, Shield, Copy, Check } from "lucide-react";
+import { QrCode, AlertTriangle, Shield, Copy, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { getAppBaseUrl } from "@/lib/app-url";
@@ -15,34 +16,62 @@ const PatientQR = () => {
   const { user } = useAuth();
   const [patient, setPatient] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    const load = async () => {
-      const [p, pr] = await Promise.all([
-        supabase.from("patients").select("*").eq("user_id", user.id).single(),
-        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-      ]);
-      setPatient(p.data);
-      setProfile(pr.data);
+    let cancelled = false;
+
+    const ensurePatient = async () => {
+      // Fetch patient; if missing (e.g. older OAuth user), create it.
+      let { data: p } = await supabase.from("patients").select("*").eq("user_id", user.id).maybeSingle();
+      if (!p) {
+        const { data: created } = await supabase
+          .from("patients")
+          .insert({ user_id: user.id })
+          .select()
+          .single();
+        p = created;
+      }
+      const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
+      if (cancelled) return;
+      setPatient(p);
+      setProfile(pr);
     };
-    load();
+
+    void ensurePatient();
+    return () => { cancelled = true; };
   }, [user]);
 
-  const qrLink = patient?.id
-    ? `${appBaseUrl}/emergency/${patient?.id}`
-    : "";
+  const qrLink = useMemo(
+    () => (patient?.id ? `${appBaseUrl}/emergency/${patient.id}` : ""),
+    [patient?.id]
+  );
 
-  const qrUrl = patient?.id
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrLink)}`
-    : "";
+  useEffect(() => {
+    if (!qrLink) return;
+    QRCode.toDataURL(qrLink, {
+      width: 320,
+      margin: 1,
+      errorCorrectionLevel: "H",
+      color: { dark: "#0f172a", light: "#ffffff" },
+    }).then(setQrDataUrl).catch(() => setQrDataUrl(""));
+  }, [qrLink]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(qrLink);
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const downloadQr = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `${patient?.patient_uid || "emergency"}-qr.png`;
+    a.click();
   };
 
   return (
@@ -61,25 +90,27 @@ const PatientQR = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
-              {patient?.id ? (
-                <>
-                  <img src={qrUrl} alt="Emergency QR Code" className="rounded-lg border border-border" />
-                  <p className="font-mono text-lg font-bold text-primary">{patient?.patient_uid}</p>
-                  <Badge variant="outline" className="gap-1">
-                    <Shield className="h-3 w-3" /> Permanent • Emergency Access
-                  </Badge>
-                  <p className="break-all text-center text-xs text-muted-foreground">{qrLink}</p>
-                  <Button variant="outline" size="sm" onClick={copyLink} className="gap-2">
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied ? "Copied!" : "Copy Link"}
-                  </Button>
-                </>
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="Emergency QR Code" className="rounded-lg border border-border" width={280} height={280} />
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
-                  <QrCode className="mx-auto h-16 w-16 mb-4 opacity-30" />
-                  <p>QR code is being generated...</p>
-                </div>
+                <div className="h-[280px] w-[280px] rounded-lg border border-border bg-muted/40" />
               )}
+              <p className="font-mono text-lg font-bold text-primary">{patient?.patient_uid || "—"}</p>
+              <Badge variant="outline" className="gap-1">
+                <Shield className="h-3 w-3" /> Permanent • Emergency Access
+              </Badge>
+              {qrLink && (
+                <p className="break-all text-center text-xs text-muted-foreground">{qrLink}</p>
+              )}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={copyLink} disabled={!qrLink} className="gap-2">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "Copied!" : "Copy Link"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={downloadQr} disabled={!qrDataUrl} className="gap-2">
+                  <Download className="h-4 w-4" /> Download
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
