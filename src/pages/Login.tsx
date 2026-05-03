@@ -18,29 +18,78 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [portal, setPortal] = useState<Portal | null>(null);
 
+  const validatePortalAccess = async (userId: string, selectedPortal: Portal) => {
+    // Fetch user roles
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const roles = (roleRows ?? []).map((r) => r.role as string);
+
+    // Admins can access either portal
+    if (roles.includes("admin")) return { ok: true, redirect: "/admin" };
+
+    if (selectedPortal === "doctor") {
+      if (!roles.includes("doctor")) {
+        await supabase.auth.signOut();
+        toast.error("This account is not registered as a doctor. Please use the Patient Portal.");
+        return { ok: false, redirect: null };
+      }
+      return { ok: true, redirect: "/doctor" };
+    }
+
+    // Patient portal selected
+    if (roles.includes("doctor") && !roles.includes("patient")) {
+      await supabase.auth.signOut();
+      toast.error("This account is registered as a doctor. Please use the Doctor Portal.");
+      return { ok: false, redirect: null };
+    }
+
+    // Ensure patient row + role exist (covers Google OAuth signups without metadata)
+    if (!roles.includes("patient")) {
+      await supabase.rpc("assign_role_to_user", { _role: "patient" });
+    }
+    // Make sure there's a patient record
+    const { data: existing } = await supabase
+      .from("patients")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!existing) {
+      await supabase.from("patients").insert({ user_id: userId });
+    }
+    return { ok: true, redirect: "/patient" };
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!portal) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast.error(error.message);
-    } else {
-      navigate("/dashboard");
+      setLoading(false);
+      return;
+    }
+    if (data.user) {
+      const result = await validatePortalAccess(data.user.id, portal);
+      if (result.ok && result.redirect) navigate(result.redirect);
     }
     setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
+    if (!portal) return;
     const baseUrl = getAppBaseUrl();
+    // Stash selected portal so we can validate after OAuth redirect lands on /dashboard
+    sessionStorage.setItem("upmrs_selected_portal", portal);
     const isLovableHost = /\.lovable\.(app|dev|host)$|lovableproject\.com$/.test(
       new URL(baseUrl).hostname
     );
 
-    // The Lovable managed OAuth broker (/~oauth/*) only exists on Lovable-hosted domains.
-    // On external hosts like Firebase, fall back to Supabase's direct OAuth flow.
     if (isLovableHost) {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: baseUrl,
+        redirect_uri: `${baseUrl}/dashboard`,
       });
       if (result.error) toast.error("Google login failed");
       if (!result.redirected && !result.error) navigate("/dashboard");
