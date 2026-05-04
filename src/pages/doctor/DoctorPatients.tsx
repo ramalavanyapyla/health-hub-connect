@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -6,7 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Send, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import {
+  Search,
+  User,
+  Send,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Eye,
+  Droplets,
+  AlertTriangle,
+  HeartPulse,
+  Phone,
+  MessageCircle,
+  FileText,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const DoctorPatients = () => {
@@ -14,6 +30,8 @@ const DoctorPatients = () => {
   const [searchId, setSearchId] = useState("");
   const [patient, setPatient] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [emergency, setEmergency] = useState<any>(null);
+  const [showEmergency, setShowEmergency] = useState(false);
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [doctorProfile, setDoctorProfile] = useState<any>(null);
@@ -31,41 +49,46 @@ const DoctorPatients = () => {
       setDoctorProfile(dp);
 
       if (dp) {
-        // Load approved patients
         const { data: accessList } = await supabase
           .from("doctor_patient_access")
           .select("*, patients(*)")
           .eq("doctor_id", dp.id)
           .eq("status", "approved");
-        
-        if (accessList) {
-          const patientIds = accessList.map((a: any) => a.patient_id);
-          if (patientIds.length > 0) {
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("*")
-              .in("user_id", accessList.map((a: any) => a.patients?.user_id).filter(Boolean));
-            
-            setApprovedPatients(accessList.map((a: any) => ({
+
+        if (accessList && accessList.length > 0) {
+          const userIds = accessList.map((a: any) => a.patients?.user_id).filter(Boolean);
+          const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
+          setApprovedPatients(
+            accessList.map((a: any) => ({
               ...a,
               patientProfile: profiles?.find((p: any) => p.user_id === a.patients?.user_id),
-            })));
-          }
+            }))
+          );
         }
       }
     };
     loadDoctor();
   }, [user]);
 
+  const resetSearch = () => {
+    setPatient(null);
+    setProfile(null);
+    setEmergency(null);
+    setShowEmergency(false);
+    setRecords([]);
+    setAccessStatus(null);
+  };
+
   const handleSearch = async () => {
     if (!searchId.trim()) return;
     setLoading(true);
-    setPatient(null);
-    setProfile(null);
-    setRecords([]);
-    setAccessStatus(null);
+    resetSearch();
 
-    const { data: p } = await supabase.from("patients").select("*").eq("patient_uid", searchId.trim()).single();
+    const { data: p } = await supabase
+      .from("patients")
+      .select("*")
+      .eq("patient_uid", searchId.trim())
+      .single();
     if (!p) {
       toast.error("Patient not found");
       setLoading(false);
@@ -73,32 +96,47 @@ const DoctorPatients = () => {
     }
     setPatient(p);
 
-    // Get basic profile (name, blood group, gender, dob)
-    const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", p.user_id).single();
+    const { data: pr } = await supabase.from("profiles").select("full_name").eq("user_id", p.user_id).single();
     setProfile(pr);
 
-    // Check access status
     if (doctorProfile) {
       const { data: access } = await supabase
         .from("doctor_patient_access")
         .select("status")
         .eq("doctor_id", doctorProfile.id)
         .eq("patient_id", p.id)
-        .single();
-      
+        .maybeSingle();
+
       if (access) {
         setAccessStatus(access.status);
         if (access.status === "approved") {
-          const { data: recs } = await supabase
-            .from("medical_records")
-            .select("*")
-            .eq("patient_id", p.id)
-            .order("record_date", { ascending: false });
-          setRecords(recs || []);
+          await loadFullRecords(p.id);
         }
       }
     }
     setLoading(false);
+  };
+
+  const loadFullRecords = async (patientId: string) => {
+    const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", patient?.user_id || "").single();
+    if (pr) setProfile(pr);
+    const { data: recs } = await supabase
+      .from("medical_records")
+      .select("*")
+      .eq("patient_id", patientId)
+      .order("record_date", { ascending: false });
+    setRecords(recs || []);
+  };
+
+  const viewEmergencyInfo = async () => {
+    if (!patient) return;
+    const { data: em } = await supabase
+      .from("public_emergency_profiles")
+      .select("*")
+      .eq("patient_id", patient.id)
+      .maybeSingle();
+    setEmergency(em);
+    setShowEmergency(true);
   };
 
   const requestAccess = async () => {
@@ -108,11 +146,8 @@ const DoctorPatients = () => {
       patient_id: patient.id,
     });
     if (error) {
-      if (error.code === "23505") {
-        toast.error("Access request already sent");
-      } else {
-        toast.error(error.message);
-      }
+      if (error.code === "23505") toast.error("Access request already sent");
+      else toast.error(error.message);
       return;
     }
     setAccessStatus("pending");
@@ -122,8 +157,12 @@ const DoctorPatients = () => {
   return (
     <DashboardLayout role="doctor">
       <div className="space-y-6">
-        <h1 className="font-display text-2xl font-bold">Patient Lookup</h1>
-        <p className="text-muted-foreground">Search for a patient using their Patient ID. You can only view full records after the patient approves your access request.</p>
+        <div>
+          <h1 className="font-display text-2xl font-bold">Patient Lookup</h1>
+          <p className="text-muted-foreground">
+            Search by Patient ID, view emergency info, then request access for full records and chat.
+          </p>
+        </div>
 
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -141,65 +180,159 @@ const DoctorPatients = () => {
           </Button>
         </div>
 
+        {/* Step 1: Show patient name once found */}
         {patient && profile && (
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                {profile.full_name}
-                <Badge variant="outline" className="ml-auto font-mono">{patient.patient_uid}</Badge>
+                {profile.full_name || "Unnamed Patient"}
+                <Badge variant="outline" className="ml-auto font-mono">
+                  {patient.patient_uid}
+                </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 text-sm sm:grid-cols-3">
-                <div><span className="text-muted-foreground">Blood Group:</span> <strong>{profile.blood_group || "N/A"}</strong></div>
-                <div><span className="text-muted-foreground">Gender:</span> <strong>{profile.gender || "N/A"}</strong></div>
-                <div><span className="text-muted-foreground">DOB:</span> <strong>{profile.date_of_birth || "N/A"}</strong></div>
-              </div>
+            <CardContent className="space-y-4">
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2">
+                {!showEmergency && (
+                  <Button variant="outline" onClick={viewEmergencyInfo} className="gap-2">
+                    <Eye className="h-4 w-4" /> View Emergency Info
+                  </Button>
+                )}
 
-              {/* Access status */}
-              <div className="mt-4">
                 {!accessStatus && (
-                  <Button onClick={requestAccess} className="gap-2">
-                    <Send className="h-4 w-4" /> Request Access to Records
+                  <Button onClick={requestAccess} className="gap-2 gradient-primary border-0 text-primary-foreground">
+                    <Send className="h-4 w-4" /> Request Full Access
                   </Button>
                 )}
                 {accessStatus === "pending" && (
                   <Badge variant="secondary" className="gap-1 text-sm py-1.5 px-3">
-                    <Clock className="h-4 w-4" /> Access request pending — waiting for patient approval
+                    <Clock className="h-4 w-4" /> Waiting for patient approval
                   </Badge>
                 )}
                 {accessStatus === "rejected" && (
                   <Badge variant="destructive" className="gap-1 text-sm py-1.5 px-3">
-                    <XCircle className="h-4 w-4" /> Access request was rejected by patient
+                    <XCircle className="h-4 w-4" /> Request rejected
                   </Badge>
                 )}
                 {accessStatus === "approved" && (
-                  <>
-                    <Badge className="gap-1 text-sm py-1.5 px-3 mb-4 bg-green-600">
-                      <CheckCircle className="h-4 w-4" /> Access granted
-                    </Badge>
-                    <div className="mt-4">
-                      <h3 className="font-semibold mb-3">Medical History ({records.length} records)</h3>
-                      {records.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">No records found.</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {records.map((r) => (
-                            <div key={r.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                              <div>
-                                <p className="font-medium">{r.title}</p>
-                                <p className="text-xs text-muted-foreground capitalize">{r.record_type.replace("_", " ")}</p>
-                              </div>
-                              <span className="text-xs text-muted-foreground">{r.record_date}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </>
+                  <Badge className="gap-1 text-sm py-1.5 px-3 bg-green-600">
+                    <CheckCircle className="h-4 w-4" /> Access approved
+                  </Badge>
                 )}
               </div>
+
+              {/* Emergency info panel */}
+              {showEmergency && (
+                <>
+                  <Separator />
+                  <div className="space-y-4">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive" /> Emergency Information
+                    </h3>
+                    {!emergency ? (
+                      <p className="text-sm text-muted-foreground">No emergency info available.</p>
+                    ) : (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                          <p className="text-xs uppercase text-muted-foreground mb-1">Blood Group</p>
+                          <p className="flex items-center gap-2 text-lg font-bold text-destructive">
+                            <Droplets className="h-4 w-4" /> {emergency.blood_group || "N/A"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                          <p className="text-xs uppercase text-muted-foreground mb-1">Emergency Contact</p>
+                          <p className="font-semibold text-sm">{emergency.emergency_contact_name || "N/A"}</p>
+                          {emergency.emergency_contact_phone && (
+                            <a
+                              href={`tel:${emergency.emergency_contact_phone}`}
+                              className="text-xs text-primary inline-flex items-center gap-1 mt-1"
+                            >
+                              <Phone className="h-3 w-3" /> {emergency.emergency_contact_phone}
+                            </a>
+                          )}
+                        </div>
+                        <div className="rounded-lg border border-border p-3">
+                          <p className="text-xs uppercase text-muted-foreground mb-1 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Allergies
+                          </p>
+                          <p className="text-sm">{emergency.allergies || "None listed"}</p>
+                        </div>
+                        <div className="rounded-lg border border-border p-3">
+                          <p className="text-xs uppercase text-muted-foreground mb-1 flex items-center gap-1">
+                            <HeartPulse className="h-3 w-3" /> Medical Conditions
+                          </p>
+                          <p className="text-sm">{emergency.medical_conditions || "None listed"}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Full records (only after approval) */}
+              {accessStatus === "approved" && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" /> Full Medical History ({records.length})
+                      </h3>
+                      <Button asChild size="sm" variant="outline" className="gap-1">
+                        <Link to="/doctor/chat">
+                          <MessageCircle className="h-4 w-4" /> Chat
+                        </Link>
+                      </Button>
+                    </div>
+                    <div className="grid gap-2 text-sm sm:grid-cols-3">
+                      <div>
+                        <span className="text-muted-foreground">Gender:</span>{" "}
+                        <strong>{profile.gender || "N/A"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">DOB:</span>{" "}
+                        <strong>{profile.date_of_birth || "N/A"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Phone:</span>{" "}
+                        <strong>{profile.phone || "N/A"}</strong>
+                      </div>
+                    </div>
+                    {records.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No records yet.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {records.map((r) => (
+                          <div
+                            key={r.id}
+                            className="rounded-lg border border-border p-3 space-y-1"
+                          >
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">{r.title}</p>
+                              <span className="text-xs text-muted-foreground">{r.record_date}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {r.record_type.replace("_", " ")}
+                            </p>
+                            {r.diagnosis && (
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">Diagnosis:</span> {r.diagnosis}
+                              </p>
+                            )}
+                            {r.prescription && (
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">Prescription:</span> {r.prescription}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
