@@ -79,6 +79,10 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!portal) return;
+    if (portal === "doctor" && !licenseNumber.trim()) {
+      toast.error("License ID is required for doctor login");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
