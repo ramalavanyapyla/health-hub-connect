@@ -145,6 +145,59 @@ const PatientDashboard = () => {
           </Link>
         </div>
 
+        {pendingRequests.length > 0 && (
+          <Card className="shadow-card border-primary/40">
+            <CardHeader>
+              <CardTitle className="font-display flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-primary" /> Doctor Access Requests
+                <Badge variant="secondary" className="ml-2">{pendingRequests.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                The following doctors have requested access to your full medical records. Approve to allow them to view records and chat with you.
+              </p>
+              {pendingRequests.map((req) => (
+                <div key={req.id} className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <Stethoscope className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Dr. {req.doctorName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {req.doctor?.specialization || "General"}
+                        {req.doctor?.license_number ? ` • License: ${req.doctor.license_number}` : ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Requested {format(new Date(req.requested_at), "MMM d, yyyy h:mm a")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-green-600 border-green-600 hover:bg-green-50"
+                      onClick={() => respondToRequest(req.id, "approved")}
+                    >
+                      <CheckCircle className="h-4 w-4" /> Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-destructive border-destructive hover:bg-destructive/10"
+                      onClick={() => respondToRequest(req.id, "rejected")}
+                    >
+                      <XCircle className="h-4 w-4" /> Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="font-display">Recent Medical Records</CardTitle>
