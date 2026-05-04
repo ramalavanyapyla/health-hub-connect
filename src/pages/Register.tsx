@@ -9,6 +9,7 @@ import { ShieldCheck, Mail, Lock, User, Phone, Award, Stethoscope } from "lucide
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { getAppBaseUrl } from "@/lib/app-url";
+import { PasswordInput, PasswordStrengthMeter } from "@/components/PasswordInput";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -128,10 +129,15 @@ const Register = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input id="password" type="password" placeholder="Min 8 characters" className="pl-10" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
-            </div>
+            <PasswordInput
+              id="password"
+              placeholder="Min 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+            <PasswordStrengthMeter password={password} />
           </div>
 
           {role === "doctor" && (
