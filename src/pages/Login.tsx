@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ShieldCheck, Mail, Lock, User, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { getAppBaseUrl } from "@/lib/app-url";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type Portal = "patient" | "doctor";
 
