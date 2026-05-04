@@ -82,6 +82,7 @@ const PatientDashboard = () => {
           .limit(5);
         setRecords(recs || []);
         setRecordCount(count || 0);
+        loadPendingRequests(patientRes.data.id);
       }
     };
     fetchData();
