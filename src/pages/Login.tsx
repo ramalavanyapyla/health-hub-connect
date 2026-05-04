@@ -37,6 +37,19 @@ const Login = () => {
         toast.error("This account is not registered as a doctor. Please use the Patient Portal.");
         return { ok: false, redirect: null };
       }
+      // Verify License ID matches the doctor profile
+      const { data: docProfile } = await supabase
+        .from("doctor_profiles")
+        .select("license_number")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const expected = (docProfile?.license_number ?? "").trim();
+      const provided = licenseNumber.trim();
+      if (!expected || expected.toLowerCase() !== provided.toLowerCase()) {
+        await supabase.auth.signOut();
+        toast.error("Invalid License ID for this doctor account.");
+        return { ok: false, redirect: null };
+      }
       return { ok: true, redirect: "/doctor" };
     }
 
