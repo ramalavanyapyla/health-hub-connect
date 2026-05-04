@@ -3,9 +3,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Activity, Calendar, QrCode } from "lucide-react";
+import { FileText, Activity, Calendar, QrCode, UserCheck, CheckCircle, XCircle, Stethoscope } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const PatientDashboard = () => {
   const { user } = useAuth();
@@ -13,6 +16,50 @@ const PatientDashboard = () => {
   const [patient, setPatient] = useState<any>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [recordCount, setRecordCount] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+
+  const loadPendingRequests = async (patientId: string) => {
+    const { data } = await supabase
+      .from("doctor_patient_access")
+      .select("*")
+      .eq("patient_id", patientId)
+      .eq("status", "pending")
+      .order("requested_at", { ascending: false });
+    if (data && data.length > 0) {
+      const doctorIds = data.map((d: any) => d.doctor_id);
+      const { data: docs } = await supabase
+        .from("doctor_profiles")
+        .select("*")
+        .in("id", doctorIds);
+      const userIds = (docs || []).map((d: any) => d.user_id).filter(Boolean);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+      setPendingRequests(
+        data.map((r: any) => {
+          const doc = docs?.find((d: any) => d.id === r.doctor_id);
+          const prof = profs?.find((p: any) => p.user_id === doc?.user_id);
+          return { ...r, doctor: doc, doctorName: prof?.full_name || "Doctor" };
+        })
+      );
+    } else {
+      setPendingRequests([]);
+    }
+  };
+
+  const respondToRequest = async (id: string, status: "approved" | "rejected") => {
+    const { error } = await supabase
+      .from("doctor_patient_access")
+      .update({ status, responded_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(status === "approved" ? "Doctor access approved!" : "Request rejected");
+    if (patient) loadPendingRequests(patient.id);
+  };
 
   useEffect(() => {
     if (!user) return;
