@@ -6,6 +6,13 @@ import DoctorPatientChat from "@/components/DoctorPatientChat";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle } from "lucide-react";
 
+type ApprovedPatientProfile = {
+  patient_id: string;
+  user_id: string;
+  patient_uid: string;
+  full_name: string | null;
+};
+
 const DoctorChat = () => {
   const { user } = useAuth();
   const [approvedPatients, setApprovedPatients] = useState<any[]>([]);
@@ -14,31 +21,43 @@ const DoctorChat = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data: dp } = await supabase.from("doctor_profiles").select("id").eq("user_id", user.id).single();
+      const { data: dp } = await supabase.from("doctor_profiles").select("id").eq("user_id", user.id).maybeSingle();
       if (!dp) return;
 
       const { data: access } = await supabase
         .from("doctor_patient_access")
-        .select("*, patients(*)")
+        .select("id, patient_id, status")
         .eq("doctor_id", dp.id)
         .eq("status", "approved");
 
-      if (access) {
-        const patientUserIds = access.map((a: any) => a.patients?.user_id).filter(Boolean);
-        if (patientUserIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("*")
-            .in("user_id", patientUserIds);
+      if (access && access.length > 0) {
+        const patientProfiles = await Promise.all(
+          access.map(async (entry: any) => {
+            const { data } = await supabase.rpc("get_patient_profile_for_doctor", {
+              _patient_id: entry.patient_id,
+            });
+            return {
+              access: entry,
+              profile: (data?.[0] as ApprovedPatientProfile | undefined) ?? null,
+            };
+          })
+        );
 
-          setApprovedPatients(
-            access.map((a: any) => ({
-              ...a,
-              patientName: profiles?.find((p: any) => p.user_id === a.patients?.user_id)?.full_name || "Patient",
-              patientUserId: a.patients?.user_id,
+        setApprovedPatients(
+          patientProfiles
+            .filter((entry) => entry.profile)
+            .map(({ access, profile }) => ({
+              ...access,
+              patients: {
+                id: profile!.patient_id,
+                patient_uid: profile!.patient_uid,
+              },
+              patientName: profile!.full_name || "Patient",
+              patientUserId: profile!.user_id,
             }))
-          );
-        }
+        );
+      } else {
+        setApprovedPatients([]);
       }
     };
     load();
