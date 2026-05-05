@@ -254,7 +254,7 @@ const DoctorPatients = () => {
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
           </div>
-          <Button onClick={handleSearch} className="gradient-primary border-0 text-primary-foreground" disabled={loading}>
+          <Button onClick={() => handleSearch()} className="gradient-primary border-0 text-primary-foreground" disabled={loading}>
             {loading ? "Searching..." : "Search"}
           </Button>
         </div>
