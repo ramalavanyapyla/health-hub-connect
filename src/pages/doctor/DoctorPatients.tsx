@@ -25,6 +25,35 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+type PatientLookupResult = {
+  patient_id: string;
+  user_id: string;
+  patient_uid: string;
+  full_name: string | null;
+  blood_group: string | null;
+  allergies: string | null;
+  medical_conditions: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+};
+
+type PatientProfileResult = {
+  patient_id: string;
+  user_id: string;
+  patient_uid: string;
+  full_name: string | null;
+  blood_group: string | null;
+  allergies: string | null;
+  medical_conditions: string | null;
+  gender: string | null;
+  date_of_birth: string | null;
+  phone: string | null;
+  address: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  avatar_url: string | null;
+};
+
 const DoctorPatients = () => {
   const { user } = useAuth();
   const [searchId, setSearchId] = useState("");
@@ -49,17 +78,27 @@ const DoctorPatients = () => {
       setApprovedPatients([]);
       return;
     }
+
     const patientIds = accessList.map((a: any) => a.patient_id);
-    const { data: pts } = await supabase.from("patients").select("*").in("id", patientIds);
-    const userIds = (pts || []).map((p: any) => p.user_id).filter(Boolean);
-    const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
+    const requests = await Promise.all(
+      patientIds.map(async (patientId: string) => {
+        const { data } = await supabase.rpc("get_patient_profile_for_doctor", {
+          _patient_id: patientId,
+        });
+        return (data?.[0] as PatientProfileResult | undefined) ?? null;
+      })
+    );
+    const approvedPatientProfiles = requests.filter(Boolean) as PatientProfileResult[];
+
     setApprovedPatients(
       accessList.map((a: any) => {
-        const pt = pts?.find((p: any) => p.id === a.patient_id);
+        const pt = approvedPatientProfiles.find((p) => p.patient_id === a.patient_id);
         return {
           ...a,
-          patients: pt,
-          patientProfile: profiles?.find((p: any) => p.user_id === pt?.user_id),
+          patients: pt
+            ? { id: pt.patient_id, user_id: pt.user_id, patient_uid: pt.patient_uid }
+            : null,
+          patientProfile: pt,
         };
       })
     );
@@ -140,39 +179,46 @@ const DoctorPatients = () => {
     }
     setLoading(true);
     resetSearch();
+    setSearchId(id);
 
-    const { data: p, error: pErr } = await supabase
-      .from("patients")
-      .select("*")
-      .eq("patient_uid", id)
-      .maybeSingle();
+    const { data: lookupRows, error: lookupError } = await supabase.rpc("search_patient_lookup", {
+      _patient_uid: id,
+    });
 
-    if (pErr) {
-      toast.error("Search failed: " + pErr.message);
+    if (lookupError) {
+      toast.error("Search failed: " + lookupError.message);
       setLoading(false);
       return;
     }
-    if (!p) {
+
+    const lookup = (lookupRows?.[0] as PatientLookupResult | undefined) ?? null;
+    if (!lookup) {
       toast.error(`Patient not found for ID "${id}"`);
       setLoading(false);
       return;
     }
-    setPatient(p);
 
-    const { data: pr } = await supabase
-      .from("profiles")
-      .select("full_name, blood_group, allergies, medical_conditions, gender, date_of_birth, phone")
-      .eq("user_id", p.user_id)
-      .maybeSingle();
-    setProfile(pr);
-
-    // Auto-load emergency snapshot up front
-    const { data: em } = await supabase
-      .from("public_emergency_profiles")
-      .select("*")
-      .eq("patient_id", p.id)
-      .maybeSingle();
-    setEmergency(em);
+    const patientRecord = {
+      id: lookup.patient_id,
+      user_id: lookup.user_id,
+      patient_uid: lookup.patient_uid,
+    };
+    setPatient(patientRecord);
+    setProfile({
+      full_name: lookup.full_name,
+      blood_group: lookup.blood_group,
+      allergies: lookup.allergies,
+      medical_conditions: lookup.medical_conditions,
+    });
+    setEmergency({
+      patient_id: lookup.patient_id,
+      full_name: lookup.full_name,
+      blood_group: lookup.blood_group,
+      allergies: lookup.allergies,
+      medical_conditions: lookup.medical_conditions,
+      emergency_contact_name: lookup.emergency_contact_name,
+      emergency_contact_phone: lookup.emergency_contact_phone,
+    });
     setShowEmergency(true);
 
     if (doctorProfile) {
@@ -180,25 +226,48 @@ const DoctorPatients = () => {
         .from("doctor_patient_access")
         .select("status")
         .eq("doctor_id", doctorProfile.id)
-        .eq("patient_id", p.id)
+        .eq("patient_id", lookup.patient_id)
         .maybeSingle();
 
       if (access) {
         setAccessStatus(access.status);
         if (access.status === "approved") {
-          await loadFullRecords(p.id, p.user_id);
+          await loadFullRecords(lookup.patient_id);
         }
       }
     }
     setLoading(false);
   };
 
-  const loadFullRecords = async (patientId: string, patientUserId?: string) => {
-    const uid = patientUserId || patient?.user_id;
-    if (uid) {
-      const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle();
-      if (pr) setProfile(pr);
+  const loadFullRecords = async (patientId: string) => {
+    const { data: patientRows, error: patientError } = await supabase.rpc("get_patient_profile_for_doctor", {
+      _patient_id: patientId,
+    });
+
+    if (patientError) {
+      toast.error("Failed to load patient records: " + patientError.message);
+      return;
     }
+
+    const patientProfile = (patientRows?.[0] as PatientProfileResult | undefined) ?? null;
+    if (patientProfile) {
+      setPatient({
+        id: patientProfile.patient_id,
+        user_id: patientProfile.user_id,
+        patient_uid: patientProfile.patient_uid,
+      });
+      setProfile(patientProfile);
+      setEmergency({
+        patient_id: patientProfile.patient_id,
+        full_name: patientProfile.full_name,
+        blood_group: patientProfile.blood_group,
+        allergies: patientProfile.allergies,
+        medical_conditions: patientProfile.medical_conditions,
+        emergency_contact_name: patientProfile.emergency_contact_name,
+        emergency_contact_phone: patientProfile.emergency_contact_phone,
+      });
+    }
+
     const { data: recs } = await supabase
       .from("medical_records")
       .select("*")
@@ -209,12 +278,6 @@ const DoctorPatients = () => {
 
   const viewEmergencyInfo = async () => {
     if (!patient) return;
-    const { data: em } = await supabase
-      .from("public_emergency_profiles")
-      .select("*")
-      .eq("patient_id", patient.id)
-      .maybeSingle();
-    setEmergency(em);
     setShowEmergency(true);
   };
 

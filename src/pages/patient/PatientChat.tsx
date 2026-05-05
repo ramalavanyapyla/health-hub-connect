@@ -3,8 +3,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import DoctorPatientChat from "@/components/DoctorPatientChat";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle } from "lucide-react";
+
+type DoctorDirectoryEntry = {
+  doctor_id: string;
+  user_id: string;
+  full_name: string | null;
+  specialization: string | null;
+  department: string | null;
+  license_number: string | null;
+  phone: string | null;
+};
 
 const PatientChat = () => {
   const { user } = useAuth();
@@ -14,31 +24,42 @@ const PatientChat = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data: patient } = await supabase.from("patients").select("id").eq("user_id", user.id).single();
+      const { data: patient } = await supabase.from("patients").select("id").eq("user_id", user.id).maybeSingle();
       if (!patient) return;
 
       const { data: access } = await supabase
         .from("doctor_patient_access")
-        .select("*, doctor_profiles(*)")
+        .select("id, doctor_id, status")
         .eq("patient_id", patient.id)
         .eq("status", "approved");
 
-      if (access) {
-        const doctorUserIds = access.map((a: any) => a.doctor_profiles?.user_id).filter(Boolean);
-        if (doctorUserIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("*")
-            .in("user_id", doctorUserIds);
+      if (access && access.length > 0) {
+        const doctorIds = access.map((a: any) => a.doctor_id);
+        const { data: doctors } = await supabase.rpc("get_doctor_directory_entries", {
+          _doctor_ids: doctorIds,
+        });
 
-          setApprovedDoctors(
-            access.map((a: any) => ({
-              ...a,
-              doctorName: profiles?.find((p: any) => p.user_id === a.doctor_profiles?.user_id)?.full_name || "Doctor",
-              doctorUserId: a.doctor_profiles?.user_id,
-            }))
-          );
-        }
+        const doctorMap = new Map(
+          ((doctors as DoctorDirectoryEntry[] | null) || []).map((doctor) => [doctor.doctor_id, doctor])
+        );
+
+        setApprovedDoctors(
+          access
+            .map((entry: any) => {
+              const doctor = doctorMap.get(entry.doctor_id);
+              if (!doctor) return null;
+
+              return {
+                ...entry,
+                doctor_profiles: doctor,
+                doctorName: doctor.full_name || "Doctor",
+                doctorUserId: doctor.user_id,
+              };
+            })
+            .filter(Boolean)
+        );
+      } else {
+        setApprovedDoctors([]);
       }
     };
     load();

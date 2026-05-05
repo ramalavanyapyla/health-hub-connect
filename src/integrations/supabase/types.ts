@@ -518,12 +518,65 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: undefined
       }
+      can_chat_between_users: {
+        Args: { _user_a: string; _user_b: string }
+        Returns: boolean
+      }
+      get_doctor_directory_entries: {
+        Args: { _doctor_ids?: string[] }
+        Returns: {
+          department: string
+          doctor_id: string
+          full_name: string
+          license_number: string
+          phone: string
+          specialization: string
+          user_id: string
+        }[]
+      }
+      get_patient_profile_for_doctor: {
+        Args: { _patient_id: string }
+        Returns: {
+          address: string
+          allergies: string
+          avatar_url: string
+          blood_group: string
+          date_of_birth: string
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          full_name: string
+          gender: string
+          medical_conditions: string
+          patient_id: string
+          patient_uid: string
+          phone: string
+          user_id: string
+        }[]
+      }
+      has_approved_access: {
+        Args: { _doctor_user_id: string; _patient_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      search_patient_lookup: {
+        Args: { _patient_uid: string }
+        Returns: {
+          allergies: string
+          blood_group: string
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          full_name: string
+          medical_conditions: string
+          patient_id: string
+          patient_uid: string
+          user_id: string
+        }[]
       }
       sync_public_emergency_profile_for_user: {
         Args: { _user_id: string }

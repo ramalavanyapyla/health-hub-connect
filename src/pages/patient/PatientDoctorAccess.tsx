@@ -2,11 +2,21 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Trash2, UserCheck, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, UserCheck } from "lucide-react";
 import { toast } from "sonner";
+
+type DoctorDirectoryEntry = {
+  doctor_id: string;
+  user_id: string;
+  full_name: string | null;
+  specialization: string | null;
+  department: string | null;
+  license_number: string | null;
+  phone: string | null;
+};
 
 const PatientDoctorAccess = () => {
   const { user } = useAuth();
@@ -19,9 +29,13 @@ const PatientDoctorAccess = () => {
       .from("patients")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
     
-    if (!patient) return;
+    if (!patient) {
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
 
     const { data } = await supabase
       .from("doctor_patient_access")
@@ -30,17 +44,21 @@ const PatientDoctorAccess = () => {
       .order("requested_at", { ascending: false });
 
     if (data) {
-      // Fetch doctor profiles and user profiles
       const doctorIds = data.map((d: any) => d.doctor_id);
-      const { data: doctors } = await supabase
-        .from("doctor_profiles")
-        .select("*, profiles:user_id(full_name)")
-        .in("id", doctorIds);
+      const { data: doctors } = await supabase.rpc("get_doctor_directory_entries", {
+        _doctor_ids: doctorIds,
+      });
+
+      const doctorMap = new Map(
+        ((doctors as DoctorDirectoryEntry[] | null) || []).map((doctor) => [doctor.doctor_id, doctor])
+      );
 
       setRequests(data.map((req: any) => ({
         ...req,
-        doctor: doctors?.find((d: any) => d.id === req.doctor_id),
+        doctor: doctorMap.get(req.doctor_id) || null,
       })));
+    } else {
+      setRequests([]);
     }
     setLoading(false);
   };
@@ -101,10 +119,11 @@ const PatientDoctorAccess = () => {
                 <CardContent className="flex items-center justify-between p-4">
                   <div>
                     <p className="font-medium">
-                      Dr. {req.doctor?.profiles?.full_name || "Unknown"}
+                      Dr. {req.doctor?.full_name || "Unknown"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {req.doctor?.specialization || "General"} • {req.doctor?.department || ""}
+                      {req.doctor?.specialization || "General"}
+                      {req.doctor?.license_number ? ` • License: ${req.doctor.license_number}` : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
