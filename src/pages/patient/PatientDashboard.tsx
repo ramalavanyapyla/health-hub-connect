@@ -66,8 +66,8 @@ const PatientDashboard = () => {
     
     const fetchData = async () => {
       const [profileRes, patientRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-        supabase.from("patients").select("*").eq("user_id", user.id).single(),
+        supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("patients").select("*").eq("user_id", user.id).maybeSingle(),
       ]);
       
       setProfile(profileRes.data);
@@ -87,6 +87,22 @@ const PatientDashboard = () => {
     };
     fetchData();
   }, [user]);
+
+  // Realtime subscription so doctor requests show up instantly
+  useEffect(() => {
+    if (!patient) return;
+    const channel = supabase
+      .channel(`access-patient-${patient.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "doctor_patient_access", filter: `patient_id=eq.${patient.id}` },
+        () => loadPendingRequests(patient.id)
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [patient]);
 
   return (
     <DashboardLayout role="patient">

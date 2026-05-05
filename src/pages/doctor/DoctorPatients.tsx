@@ -38,37 +38,82 @@ const DoctorPatients = () => {
   const [accessStatus, setAccessStatus] = useState<string | null>(null);
   const [approvedPatients, setApprovedPatients] = useState<any[]>([]);
 
+  const loadApprovedPatients = async (doctorId: string) => {
+    const { data: accessList } = await supabase
+      .from("doctor_patient_access")
+      .select("*")
+      .eq("doctor_id", doctorId)
+      .eq("status", "approved");
+
+    if (!accessList || accessList.length === 0) {
+      setApprovedPatients([]);
+      return;
+    }
+    const patientIds = accessList.map((a: any) => a.patient_id);
+    const { data: pts } = await supabase.from("patients").select("*").in("id", patientIds);
+    const userIds = (pts || []).map((p: any) => p.user_id).filter(Boolean);
+    const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
+    setApprovedPatients(
+      accessList.map((a: any) => {
+        const pt = pts?.find((p: any) => p.id === a.patient_id);
+        return {
+          ...a,
+          patients: pt,
+          patientProfile: profiles?.find((p: any) => p.user_id === pt?.user_id),
+        };
+      })
+    );
+  };
+
   useEffect(() => {
     if (!user) return;
     const loadDoctor = async () => {
-      const { data: dp } = await supabase
+      const { data: dp, error } = await supabase
         .from("doctor_profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
-      setDoctorProfile(dp);
-
-      if (dp) {
-        const { data: accessList } = await supabase
-          .from("doctor_patient_access")
-          .select("*, patients(*)")
-          .eq("doctor_id", dp.id)
-          .eq("status", "approved");
-
-        if (accessList && accessList.length > 0) {
-          const userIds = accessList.map((a: any) => a.patients?.user_id).filter(Boolean);
-          const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
-          setApprovedPatients(
-            accessList.map((a: any) => ({
-              ...a,
-              patientProfile: profiles?.find((p: any) => p.user_id === a.patients?.user_id),
-            }))
-          );
-        }
+        .maybeSingle();
+      if (error) {
+        toast.error("Failed to load doctor profile: " + error.message);
+        return;
       }
+      if (!dp) {
+        toast.error("No doctor profile found for your account.");
+        return;
+      }
+      setDoctorProfile(dp);
+      await loadApprovedPatients(dp.id);
     };
     loadDoctor();
   }, [user]);
+
+  // Realtime: refresh when patient approves/rejects
+  useEffect(() => {
+    if (!doctorProfile) return;
+    const channel = supabase
+      .channel(`access-doctor-${doctorProfile.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "doctor_patient_access", filter: `doctor_id=eq.${doctorProfile.id}` },
+        async (payload) => {
+          const row: any = payload.new || payload.old;
+          if (patient && row?.patient_id === patient.id && payload.new) {
+            setAccessStatus((payload.new as any).status);
+            if ((payload.new as any).status === "approved") {
+              await loadFullRecords(patient.id);
+              toast.success("Patient approved your access request!");
+            } else if ((payload.new as any).status === "rejected") {
+              toast.error("Patient rejected your access request.");
+            }
+          }
+          loadApprovedPatients(doctorProfile.id);
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [doctorProfile, patient]);
 
   const resetSearch = () => {
     setPatient(null);
@@ -79,25 +124,56 @@ const DoctorPatients = () => {
     setAccessStatus(null);
   };
 
-  const handleSearch = async () => {
-    if (!searchId.trim()) return;
+  const normalizePatientId = (raw: string) => {
+    let v = raw.trim();
+    if (!v) return v;
+    const m = v.match(/^(upmrs)[-_ ]?(.+)$/i);
+    if (m) v = `UPMRS-${m[2].toLowerCase()}`;
+    return v;
+  };
+
+  const handleSearch = async (overrideId?: string) => {
+    const id = normalizePatientId(overrideId ?? searchId);
+    if (!id) {
+      toast.error("Please enter a Patient ID");
+      return;
+    }
     setLoading(true);
     resetSearch();
 
-    const { data: p } = await supabase
+    const { data: p, error: pErr } = await supabase
       .from("patients")
       .select("*")
-      .eq("patient_uid", searchId.trim())
-      .single();
+      .eq("patient_uid", id)
+      .maybeSingle();
+
+    if (pErr) {
+      toast.error("Search failed: " + pErr.message);
+      setLoading(false);
+      return;
+    }
     if (!p) {
-      toast.error("Patient not found");
+      toast.error(`Patient not found for ID "${id}"`);
       setLoading(false);
       return;
     }
     setPatient(p);
 
-    const { data: pr } = await supabase.from("profiles").select("full_name").eq("user_id", p.user_id).single();
+    const { data: pr } = await supabase
+      .from("profiles")
+      .select("full_name, blood_group, allergies, medical_conditions, gender, date_of_birth, phone")
+      .eq("user_id", p.user_id)
+      .maybeSingle();
     setProfile(pr);
+
+    // Auto-load emergency snapshot up front
+    const { data: em } = await supabase
+      .from("public_emergency_profiles")
+      .select("*")
+      .eq("patient_id", p.id)
+      .maybeSingle();
+    setEmergency(em);
+    setShowEmergency(true);
 
     if (doctorProfile) {
       const { data: access } = await supabase
@@ -110,16 +186,19 @@ const DoctorPatients = () => {
       if (access) {
         setAccessStatus(access.status);
         if (access.status === "approved") {
-          await loadFullRecords(p.id);
+          await loadFullRecords(p.id, p.user_id);
         }
       }
     }
     setLoading(false);
   };
 
-  const loadFullRecords = async (patientId: string) => {
-    const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", patient?.user_id || "").single();
-    if (pr) setProfile(pr);
+  const loadFullRecords = async (patientId: string, patientUserId?: string) => {
+    const uid = patientUserId || patient?.user_id;
+    if (uid) {
+      const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle();
+      if (pr) setProfile(pr);
+    }
     const { data: recs } = await supabase
       .from("medical_records")
       .select("*")
@@ -175,7 +254,7 @@ const DoctorPatients = () => {
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
           </div>
-          <Button onClick={handleSearch} className="gradient-primary border-0 text-primary-foreground" disabled={loading}>
+          <Button onClick={() => handleSearch()} className="gradient-primary border-0 text-primary-foreground" disabled={loading}>
             {loading ? "Searching..." : "Search"}
           </Button>
         </div>
@@ -352,8 +431,9 @@ const DoctorPatients = () => {
                     key={ap.id}
                     className="flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/50"
                     onClick={() => {
-                      setSearchId(ap.patients?.patient_uid || "");
-                      setTimeout(() => handleSearch(), 100);
+                      const uid = ap.patients?.patient_uid || "";
+                      setSearchId(uid);
+                      handleSearch(uid);
                     }}
                   >
                     <div>
