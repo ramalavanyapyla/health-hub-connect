@@ -80,24 +80,15 @@ const DoctorPatients = () => {
     }
 
     const patientIds = accessList.map((a: any) => a.patient_id);
-    const { data: patientRows, error } = await supabase.rpc("get_patient_profile_for_doctor", {
-      _patient_id: patientIds[0],
-    });
-
-    let approvedPatientProfiles: PatientProfileResult[] = [];
-    if (!error) {
-      const requests = await Promise.all(
-        patientIds.map(async (patientId: string) => {
-          const { data } = await supabase.rpc("get_patient_profile_for_doctor", {
-            _patient_id: patientId,
-          });
-          return (data?.[0] as PatientProfileResult | undefined) ?? null;
-        })
-      );
-      approvedPatientProfiles = requests.filter(Boolean) as PatientProfileResult[];
-    } else if (patientRows === null) {
-      approvedPatientProfiles = [];
-    }
+    const requests = await Promise.all(
+      patientIds.map(async (patientId: string) => {
+        const { data } = await supabase.rpc("get_patient_profile_for_doctor", {
+          _patient_id: patientId,
+        });
+        return (data?.[0] as PatientProfileResult | undefined) ?? null;
+      })
+    );
+    const approvedPatientProfiles = requests.filter(Boolean) as PatientProfileResult[];
 
     setApprovedPatients(
       accessList.map((a: any) => {
