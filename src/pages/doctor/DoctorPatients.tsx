@@ -124,25 +124,56 @@ const DoctorPatients = () => {
     setAccessStatus(null);
   };
 
+  const normalizePatientId = (raw: string) => {
+    let v = raw.trim();
+    if (!v) return v;
+    const m = v.match(/^(upmrs)[-_ ]?(.+)$/i);
+    if (m) v = `UPMRS-${m[2].toLowerCase()}`;
+    return v;
+  };
+
   const handleSearch = async () => {
-    if (!searchId.trim()) return;
+    const id = normalizePatientId(searchId);
+    if (!id) {
+      toast.error("Please enter a Patient ID");
+      return;
+    }
     setLoading(true);
     resetSearch();
 
-    const { data: p } = await supabase
+    const { data: p, error: pErr } = await supabase
       .from("patients")
       .select("*")
-      .eq("patient_uid", searchId.trim())
-      .single();
+      .eq("patient_uid", id)
+      .maybeSingle();
+
+    if (pErr) {
+      toast.error("Search failed: " + pErr.message);
+      setLoading(false);
+      return;
+    }
     if (!p) {
-      toast.error("Patient not found");
+      toast.error(`Patient not found for ID "${id}"`);
       setLoading(false);
       return;
     }
     setPatient(p);
 
-    const { data: pr } = await supabase.from("profiles").select("full_name").eq("user_id", p.user_id).single();
+    const { data: pr } = await supabase
+      .from("profiles")
+      .select("full_name, blood_group, allergies, medical_conditions, gender, date_of_birth, phone")
+      .eq("user_id", p.user_id)
+      .maybeSingle();
     setProfile(pr);
+
+    // Auto-load emergency snapshot up front
+    const { data: em } = await supabase
+      .from("public_emergency_profiles")
+      .select("*")
+      .eq("patient_id", p.id)
+      .maybeSingle();
+    setEmergency(em);
+    setShowEmergency(true);
 
     if (doctorProfile) {
       const { data: access } = await supabase
@@ -155,16 +186,19 @@ const DoctorPatients = () => {
       if (access) {
         setAccessStatus(access.status);
         if (access.status === "approved") {
-          await loadFullRecords(p.id);
+          await loadFullRecords(p.id, p.user_id);
         }
       }
     }
     setLoading(false);
   };
 
-  const loadFullRecords = async (patientId: string) => {
-    const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", patient?.user_id || "").single();
-    if (pr) setProfile(pr);
+  const loadFullRecords = async (patientId: string, patientUserId?: string) => {
+    const uid = patientUserId || patient?.user_id;
+    if (uid) {
+      const { data: pr } = await supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle();
+      if (pr) setProfile(pr);
+    }
     const { data: recs } = await supabase
       .from("medical_records")
       .select("*")
