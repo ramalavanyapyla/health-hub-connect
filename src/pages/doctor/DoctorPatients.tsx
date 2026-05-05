@@ -431,8 +431,9 @@ const DoctorPatients = () => {
                     key={ap.id}
                     className="flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/50"
                     onClick={() => {
-                      setSearchId(ap.patients?.patient_uid || "");
-                      setTimeout(() => handleSearch(), 100);
+                      const uid = ap.patients?.patient_uid || "";
+                      setSearchId(uid);
+                      handleSearch(uid);
                     }}
                   >
                     <div>
