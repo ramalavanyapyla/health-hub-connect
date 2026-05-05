@@ -10,6 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+type DoctorDirectoryEntry = {
+  doctor_id: string;
+  user_id: string;
+  full_name: string | null;
+  specialization: string | null;
+  license_number: string | null;
+};
+
 const PatientDashboard = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
@@ -27,20 +35,17 @@ const PatientDashboard = () => {
       .order("requested_at", { ascending: false });
     if (data && data.length > 0) {
       const doctorIds = data.map((d: any) => d.doctor_id);
-      const { data: docs } = await supabase
-        .from("doctor_profiles")
-        .select("*")
-        .in("id", doctorIds);
-      const userIds = (docs || []).map((d: any) => d.user_id).filter(Boolean);
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", userIds);
+      const { data: docs } = await supabase.rpc("get_doctor_directory_entries", {
+        _doctor_ids: doctorIds,
+      });
+      const doctorMap = new Map(
+        ((docs as DoctorDirectoryEntry[] | null) || []).map((doctor) => [doctor.doctor_id, doctor])
+      );
+
       setPendingRequests(
         data.map((r: any) => {
-          const doc = docs?.find((d: any) => d.id === r.doctor_id);
-          const prof = profs?.find((p: any) => p.user_id === doc?.user_id);
-          return { ...r, doctor: doc, doctorName: prof?.full_name || "Doctor" };
+          const doc = doctorMap.get(r.doctor_id);
+          return { ...r, doctor: doc, doctorName: doc?.full_name || "Doctor" };
         })
       );
     } else {
