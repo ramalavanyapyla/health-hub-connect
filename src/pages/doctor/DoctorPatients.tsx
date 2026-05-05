@@ -132,8 +132,8 @@ const DoctorPatients = () => {
     return v;
   };
 
-  const handleSearch = async () => {
-    const id = normalizePatientId(searchId);
+  const handleSearch = async (overrideId?: string) => {
+    const id = normalizePatientId(overrideId ?? searchId);
     if (!id) {
       toast.error("Please enter a Patient ID");
       return;
