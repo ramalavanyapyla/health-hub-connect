@@ -142,14 +142,14 @@ const PatientAppointments = () => {
   return (
     <DashboardLayout role="patient">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold">Appointments</h1>
             <p className="text-muted-foreground">Book and manage your appointments</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 gradient-primary border-0 text-primary-foreground">
+              <Button className="gap-2 gradient-primary border-0 text-primary-foreground w-full sm:w-auto">
                 <Plus className="h-4 w-4" /> Book Appointment
               </Button>
             </DialogTrigger>
@@ -219,7 +219,7 @@ const PatientAppointments = () => {
                 {/* Time selection */}
                 <div className="space-y-2">
                   <Label>Time *</Label>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                     {timeSlots.map((t) => (
                       <Button
                         key={t}
