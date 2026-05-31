@@ -156,7 +156,7 @@ const DoctorAppointments = () => {
               return (
                 <Card key={appt.id} className="shadow-card">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-4">
                         <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                           <User className="h-5 w-5 text-primary" />
